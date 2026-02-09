@@ -1,4 +1,4 @@
-# dev-cloud
+# arch-dev-cloud
 
 Reproducible Arch Linux development VM images, built locally with Docker + QEMU + Packer and deployable to GCP, AWS, or Azure.
 
