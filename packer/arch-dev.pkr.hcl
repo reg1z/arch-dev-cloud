@@ -30,9 +30,13 @@ source "qemu" "arch-dev" {
   accelerator  = "kvm"
   machine_type = "q35"
 
-  memory   = 2048
+  memory   = 4096
   cpus     = 2
   headless = true
+
+  qemuargs = [
+    ["-cpu", "host"],
+  ]
 
   ssh_username = "arch"
   ssh_password = "arch"
