@@ -5,6 +5,7 @@ RUN pacman -Syu --noconfirm && \
         qemu-base \
         qemu-img \
         edk2-ovmf \
+        xorriso \
         curl \
         unzip && \
     pacman -Scc --noconfirm

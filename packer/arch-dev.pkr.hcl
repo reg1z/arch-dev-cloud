@@ -22,7 +22,7 @@ source "qemu" "arch-dev" {
   iso_checksum = var.arch_image_checksum
   disk_image   = true
 
-  output_directory = "/output"
+  output_directory = "/output/build"
   vm_name          = "arch-dev.qcow2"
 
   format       = "qcow2"
