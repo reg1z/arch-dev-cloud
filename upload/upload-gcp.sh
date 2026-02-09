@@ -3,6 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
 IMAGE_PATH="$PROJECT_ROOT/output/build/arch-dev.qcow2"
 IMAGE_NAME="arch-dev-$(date +%Y%m%d)"
 
@@ -18,6 +25,7 @@ if ! command -v gsutil &>/dev/null; then
     exit 1
 fi
 
+GCP_PROJECT="${GCP_PROJECT:?Error: GCP_PROJECT environment variable must be set}"
 GCS_BUCKET="${GCS_BUCKET:?Error: GCS_BUCKET environment variable must be set (e.g. gs://your-bucket)}"
 
 if [ ! -f "$IMAGE_PATH" ]; then
@@ -31,6 +39,7 @@ gsutil cp "$IMAGE_PATH" "$GCS_BUCKET/$IMAGE_NAME.qcow2"
 
 echo "==> Creating GCP image '$IMAGE_NAME'..."
 gcloud compute images create "$IMAGE_NAME" \
+    --project="$GCP_PROJECT" \
     --source-uri="$GCS_BUCKET/$IMAGE_NAME.qcow2" \
     --guest-os-features=VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE,GVNIC
 
