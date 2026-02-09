@@ -1,22 +1,30 @@
-## ADDED Requirements
+## Purpose
+
+Defines how built VM images are uploaded to cloud providers for deployment.
+
+## Requirements
 
 ### Requirement: GCP image upload
-The system SHALL provide a script (`upload/upload-gcp.sh`) that uploads the built QCOW2 image to Google Cloud Platform as a custom compute image using `gcloud compute images import`.
+The system SHALL provide a script (`upload/upload-gcp.sh`) that uploads the built image to Google Cloud Platform as a custom compute image. Because GCP does not support Arch Linux via `gcloud compute images import`, the script SHALL convert the QCOW2 to raw format, package it as a `disk.raw` inside a `.tar.gz`, upload it to a GCS bucket, and create the image with `gcloud compute images create`.
 
 #### Scenario: Upload to GCP
 - **WHEN** the user runs `make upload-gcp` (or `./upload/upload-gcp.sh` directly)
-- **THEN** the QCOW2 from `output/` is uploaded to GCP as a custom image with a date-stamped name
+- **THEN** the QCOW2 is converted to raw, compressed as tar.gz, uploaded to GCS, and registered as a GCP compute image with a date-stamped name
 
-#### Scenario: GCP CLI required
-- **WHEN** the user attempts to upload to GCP without `gcloud` installed and authenticated
-- **THEN** the script fails with a clear error message
+#### Scenario: GCP CLI and tools required
+- **WHEN** the user attempts to upload to GCP without `gcloud`, `gsutil`, or `qemu-img` installed
+- **THEN** the script fails with a clear error message identifying the missing tool
+
+#### Scenario: GCP project and bucket configuration
+- **WHEN** the user runs the GCP upload script
+- **THEN** the script reads `GCP_PROJECT` and `GCS_BUCKET` from the `.env` file (or environment), and the `--project` flag is passed to `gcloud compute images create`
 
 ### Requirement: AWS image upload
 The system SHALL provide a script (`upload/upload-aws.sh`) that uploads the built QCOW2 image to AWS as an AMI using `aws ec2 import-image`.
 
 #### Scenario: Upload to AWS
 - **WHEN** the user runs `make upload-aws` (or `./upload/upload-aws.sh` directly)
-- **THEN** the QCOW2 from `output/` is uploaded to AWS and an AMI is created
+- **THEN** the QCOW2 from `output/build/` is uploaded to AWS and an AMI is created
 
 #### Scenario: AWS CLI required
 - **WHEN** the user attempts to upload to AWS without `aws` CLI installed and authenticated
@@ -32,6 +40,17 @@ The system SHALL provide a script (`upload/upload-az.sh`) that uploads the built
 #### Scenario: Azure CLI required
 - **WHEN** the user attempts to upload to Azure without `az` CLI installed and authenticated
 - **THEN** the script fails with a clear error message
+
+### Requirement: Environment file configuration
+Upload scripts SHALL source a `.env` file from the project root (if present) to load configuration variables such as `GCP_PROJECT` and `GCS_BUCKET`. A `.env.example` file SHALL exist with placeholder values. The `.env` file SHALL be gitignored.
+
+#### Scenario: Configuration via .env
+- **WHEN** the user creates a `.env` file from `.env.example` and fills in values
+- **THEN** upload scripts automatically load those values without requiring manual environment variable exports
+
+#### Scenario: .env not in version control
+- **WHEN** the project is cloned
+- **THEN** `.gitignore` prevents `.env` from being committed
 
 ### Requirement: Makefile upload targets
 The Makefile SHALL provide `upload-gcp`, `upload-aws`, and `upload-az` targets that invoke the corresponding upload scripts.

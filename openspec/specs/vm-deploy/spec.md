@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Defines how VMs are deployed from the built image using Terraform and personalized via cloud-init.
+
+## Requirements
 
 ### Requirement: Terraform configurations per provider
 The system SHALL provide Terraform configurations for GCP, AWS, and Azure that deploy a VM from the custom-built image. Each configuration SHALL be in its own directory (`terraform/gcp/`, `terraform/aws/`, `terraform/azure/`).
@@ -42,7 +46,7 @@ The Terraform configurations SHALL accept sensitive values (SSH private key, LLM
 - **THEN** a `secrets.tfvars.example` file exists showing the required variable names with placeholder values
 
 ### Requirement: cloud-init runtime personalization
-Each Terraform configuration SHALL pass a cloud-init user-data YAML to the VM. The user-data SHALL configure: user creation with SSH public key, git `user.name` and `user.email`, SSH private key placement and ssh-agent setup, LLM API key placement, and repo cloning to `~/repos`.
+Each Terraform configuration SHALL pass a cloud-init user-data YAML to the VM. The user-data SHALL configure the existing `arch` user (created during the Packer build) with: SSH public key authorization, git `user.name` and `user.email`, SSH private key placement and ssh-agent setup, LLM API key placement, and repo cloning to `~/repos`. The default username SHALL be `arch` to match the user configured during the Packer image build, ensuring oh-my-zsh and shell configuration are preserved.
 
 #### Scenario: SSH key injection
 - **WHEN** the VM boots with cloud-init user-data
@@ -59,6 +63,10 @@ Each Terraform configuration SHALL pass a cloud-init user-data YAML to the VM. T
 #### Scenario: ssh-agent configuration
 - **WHEN** the user logs in via SSH after cloud-init has run
 - **THEN** the ssh-agent starts automatically and the SSH private key is added, enabling Git operations over SSH
+
+#### Scenario: Username matches Packer image
+- **WHEN** the VM is deployed with default settings
+- **THEN** cloud-init configures the `arch` user, which already has oh-my-zsh, zsh, and shell plugins set up from the Packer build
 
 ### Requirement: Disk expansion on first boot
 cloud-init SHALL expand the root partition and btrfs filesystem to fill the entire disk allocated by Terraform.

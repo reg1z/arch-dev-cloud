@@ -14,7 +14,8 @@ Reproducible Arch Linux development VM images, built locally with Docker + QEMU 
 
 - Linux host with Docker and KVM (`/dev/kvm`)
 - Terraform (for deploying VMs)
-- Cloud CLI for your provider: `gcloud`, `aws`, or `az` (for uploading images and deploying)
+- `qemu-img` (for image format conversion during upload)
+- Cloud CLI for your provider: `gcloud`/`gsutil`, `aws`, or `az` (for uploading images and deploying)
 
 KVM is required for fast builds (~5-10 min). Without it, QEMU falls back to software emulation which is significantly slower.
 
@@ -24,14 +25,18 @@ KVM is required for fast builds (~5-10 min). Without it, QEMU falls back to soft
 # 1. Build the image
 make build
 
-# 2. Upload to your cloud provider
+# 2. Configure upload settings
+cp .env.example .env
+# Edit .env with your GCP_PROJECT, GCS_BUCKET, etc.
+
+# 3. Upload to your cloud provider
 make upload-gcp    # or upload-aws, upload-az
 
-# 3. Configure secrets
+# 4. Configure secrets
 cp secrets.tfvars.example secrets.tfvars
 # Edit secrets.tfvars with your SSH keys, API keys, git config, repos
 
-# 4. Deploy a VM
+# 5. Deploy a VM
 make deploy-gcp    # or deploy-aws, deploy-az
 ```
 
@@ -51,7 +56,7 @@ packer/
     05-ai-tools.sh    # Claude Code, OpenCode
     99-cleanup.sh     # Cache cleanup for smaller image
 upload/
-  upload-gcp.sh       # Upload QCOW2 to GCP
+  upload-gcp.sh       # Convert to raw, upload to GCS, create GCP image
   upload-aws.sh       # Upload QCOW2 to AWS (via S3 staging)
   upload-az.sh        # Convert to VHD and upload to Azure
 cloud-init/
@@ -61,16 +66,17 @@ terraform/
   aws/                # AWS EC2 config
   azure/              # Azure VM config
 Makefile              # User-facing interface
+.env.example          # Upload config template (GCP_PROJECT, GCS_BUCKET, etc.)
 secrets.tfvars.example
 ```
 
 ## How it works
 
-1. **Build**: A Docker container runs QEMU + Packer to boot the official [arch-boxes](https://gitlab.archlinux.org/archlinux/arch-boxes) cloud image and provision it with shell scripts. The output is a single QCOW2 file in `output/`.
+1. **Build**: A Docker container runs QEMU + Packer to boot the official [arch-boxes](https://gitlab.archlinux.org/archlinux/arch-boxes) cloud image and provision it with shell scripts. The output is a single QCOW2 file in `output/build/`. The build uses `-cpu host` to pass through host CPU features to the guest VM.
 
-2. **Upload**: Provider-specific scripts push the QCOW2 to your cloud as a custom image. These run on the host using your existing cloud CLI credentials.
+2. **Upload**: Provider-specific scripts convert and push the image to your cloud. For GCP, the QCOW2 is converted to raw format, packaged as a tar.gz, uploaded to a GCS bucket, and registered as a compute image. These run on the host using your existing cloud CLI credentials.
 
-3. **Deploy**: Terraform creates a VM from the custom image. A cloud-init user-data template handles runtime personalization -- SSH keys, git config, API keys, and repo cloning. Secrets are passed via a local `secrets.tfvars` file (gitignored) and never baked into the image.
+3. **Deploy**: Terraform creates a VM from the custom image. A cloud-init user-data template handles runtime personalization -- SSH keys, git config, API keys, and repo cloning. Cloud-init configures the existing `arch` user (which already has oh-my-zsh, zsh, and shell plugins from the build). Secrets are passed via a local `secrets.tfvars` file (gitignored) and never baked into the image.
 
 ## Secrets
 
@@ -105,8 +111,21 @@ Each provider directory (`terraform/gcp/`, `terraform/aws/`, `terraform/azure/`)
 
 Override in your `secrets.tfvars` or pass via `-var` flags.
 
-## Upload requirements
+## Upload configuration
 
-- **GCP**: `gcloud` CLI, authenticated. Set your project with `gcloud config set project <id>`.
+Upload scripts load settings from a `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Provider | Description |
+|---|---|---|
+| `GCP_PROJECT` | GCP | GCP project ID |
+| `GCS_BUCKET` | GCP | GCS bucket for staging (e.g. `gs://my-bucket`) |
+
+Provider-specific requirements:
+
+- **GCP**: `gcloud`, `gsutil`, and `qemu-img`. The script converts QCOW2 to raw, uploads to GCS, and creates the image.
 - **AWS**: `aws` CLI, authenticated. Set `AWS_IMAGE_BUCKET` env var to an S3 bucket for staging.
 - **Azure**: `az` CLI + `qemu-img`, authenticated. Set `AZURE_RESOURCE_GROUP` env var.

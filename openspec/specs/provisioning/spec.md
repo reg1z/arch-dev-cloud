@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Defines what software and configuration is baked into the VM image during the Packer build.
+
+## Requirements
 
 ### Requirement: Base system setup
 The provisioning system SHALL include a script (`01-base.sh`) that performs a full system upgrade (`pacman -Syu`), installs base development tools (`base-devel`, `git`), creates a non-root build user, and installs `yay` from the AUR for AUR package access.
@@ -8,7 +12,7 @@ The provisioning system SHALL include a script (`01-base.sh`) that performs a fu
 - **THEN** all system packages are upgraded, `base-devel` and `git` are installed, and `yay` is available for subsequent scripts to install AUR packages
 
 ### Requirement: Shell configuration
-The provisioning system SHALL include a script (`02-shell.sh`) that installs `zsh` and `tmux`, installs oh-my-zsh, enables the built-in `vi-mode` plugin, and sets zsh as the default shell for the primary user.
+The provisioning system SHALL include a script (`02-shell.sh`) that installs `zsh` and `tmux`, installs oh-my-zsh, enables the built-in `vi-mode` plugin, and sets zsh as the default shell for the primary user (`arch`).
 
 #### Scenario: zsh with oh-my-zsh and vi-mode
 - **WHEN** `02-shell.sh` completes
