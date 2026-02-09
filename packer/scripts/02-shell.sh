@@ -14,6 +14,9 @@ su - arch -c '
 echo "==> Configuring vi-mode plugin..."
 sed -i 's/^plugins=.*/plugins=(vi-mode)/' "$ARCH_HOME/.zshrc"
 
+echo "==> Adding ~/.local/bin to PATH..."
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$ARCH_HOME/.zshrc"
+
 echo "==> Setting zsh as default shell..."
 chsh -s /usr/bin/zsh arch
 
