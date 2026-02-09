@@ -35,7 +35,7 @@ variable "image_name" {
 variable "username" {
   description = "Username to create on the VM"
   type        = string
-  default     = "dev"
+  default     = "arch"
 }
 
 variable "ssh_public_key" {
