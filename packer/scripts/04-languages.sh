@@ -20,4 +20,15 @@ su - arch -c '
     nvm alias default 24
 '
 
+echo "==> Installing Rust..."
+su - arch -c '
+    curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+'
+
+echo "==> Installing rtk..."
+su - arch -c '
+    source "$HOME/.cargo/env"
+    cargo install --git https://github.com/rtk-ai/rtk
+'
+
 echo "==> 04-languages.sh complete"

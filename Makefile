@@ -9,6 +9,7 @@ build:
 	docker run --rm \
 		--device /dev/kvm \
 		-v $(CURDIR)/packer:/packer:ro \
+		-v $(CURDIR)/dots:/packer/dots:ro \
 		-v $(OUTPUT_DIR):/output \
 		$(BUILDER_IMAGE)
 

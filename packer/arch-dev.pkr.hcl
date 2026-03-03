@@ -63,6 +63,11 @@ source "qemu" "arch-dev" {
 build {
   sources = ["source.qemu.arch-dev"]
 
+  provisioner "file" {
+    source      = "/packer/dots/"
+    destination = "/tmp/dots"
+  }
+
   provisioner "shell" {
     scripts = [
       "/packer/scripts/01-base.sh",
@@ -70,6 +75,7 @@ build {
       "/packer/scripts/03-editor.sh",
       "/packer/scripts/04-languages.sh",
       "/packer/scripts/05-ai-tools.sh",
+      "/packer/scripts/06-dotfiles.sh",
       "/packer/scripts/99-cleanup.sh",
     ]
     execute_command = "sudo sh -c '{{ .Vars }} {{ .Path }}'"
