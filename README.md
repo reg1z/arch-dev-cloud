@@ -4,10 +4,10 @@ Reproducible Arch Linux development VM images, built locally with Docker + QEMU 
 
 ## What's in the image
 
-- **Shell**: zsh + oh-my-zsh (vi-mode plugin enabled) + tmux
-- **Editor**: neovim + LazyVim
-- **Languages**: Python 3 (pip, venv), Node.js 24 LTS (via nvm)
-- **AI tools**: Claude Code, OpenCode
+- **Shell**: zsh + oh-my-zsh (bira theme, vi-mode plugin) + tmux; `$EDITOR=nvim`; `~/.local/bin` on PATH
+- **Editor**: neovim + LazyVim; cursor always centered (`scrolloff=999` + `zz` bindings); `autoread` enabled
+- **Languages**: Python 3 (pip, venv), Node.js 24 LTS (via nvm), Rust (rustup)
+- **AI tools**: Claude Code, OpenCode, rtk
 - **Package manager**: yay (AUR access)
 
 ## Prerequisites
@@ -46,14 +46,27 @@ make deploy-gcp    # or deploy-aws, deploy-az
 build/
   Dockerfile          # Builder container (Arch + QEMU + Packer)
   build.sh            # Container entrypoint
+dots/
+  shell/
+    .zshrc            # Complete zshrc (bira theme, vi-mode, EDITOR, NVM, Rust)
+    .bashrc           # Bash equivalent
+    aliases           # Shell aliases (ls, git, docker, etc.)
+    tmux_fns          # Tmux layout functions (tdl, tdlm, tsl)
+  nvim/
+    lua/config/
+      options.lua     # scrolloff=999, autoread
+      keymaps.lua     # zz centering bindings for nav commands
+  tmux/
+    tmux.conf         # Tmux configuration
 packer/
   arch-dev.pkr.hcl    # Packer template (QEMU builder)
   scripts/
     01-base.sh        # System upgrade, base-devel, git, yay
     02-shell.sh       # zsh, oh-my-zsh, tmux
     03-editor.sh      # neovim, LazyVim
-    04-languages.sh   # Python 3, nvm, Node.js 24
+    04-languages.sh   # Python 3, nvm, Node.js 24, Rust, rtk
     05-ai-tools.sh    # Claude Code, OpenCode
+    06-dotfiles.sh    # Install dots/ into the image
     99-cleanup.sh     # Cache cleanup for smaller image
 upload/
   upload-gcp.sh       # Convert to raw, upload to GCS, create GCP image
@@ -65,18 +78,20 @@ terraform/
   gcp/                # GCP Compute Engine config
   aws/                # AWS EC2 config
   azure/              # Azure VM config
+openspec/
+  specs/              # Living specs per subsystem (image-build, provisioning, etc.)
+  changes/            # Archived change proposals and designs
 Makefile              # User-facing interface
-.env.example          # Upload config template (GCP_PROJECT, GCS_BUCKET, etc.)
 secrets.tfvars.example
 ```
 
 ## How it works
 
-1. **Build**: A Docker container runs QEMU + Packer to boot the official [arch-boxes](https://gitlab.archlinux.org/archlinux/arch-boxes) cloud image and provision it with shell scripts. The output is a single QCOW2 file in `output/build/`. The build uses `-cpu host` to pass through host CPU features to the guest VM.
+1. **Build**: A Docker container runs QEMU + Packer to boot the official [arch-boxes](https://gitlab.archlinux.org/archlinux/arch-boxes) cloud image and provision it with shell scripts. The output is a single QCOW2 file in `output/build/`. The build uses `-cpu host` to pass through host CPU features to the guest VM. The `dots/` directory is uploaded to the VM at `/tmp/dots/` via a Packer `file` provisioner before any shell scripts run.
 
 2. **Upload**: Provider-specific scripts convert and push the image to your cloud. For GCP, the QCOW2 is converted to raw format, packaged as a tar.gz, uploaded to a GCS bucket, and registered as a compute image. These run on the host using your existing cloud CLI credentials.
 
-3. **Deploy**: Terraform creates a VM from the custom image. A cloud-init user-data template handles runtime personalization -- SSH keys, git config, API keys, and repo cloning. Cloud-init configures the existing `arch` user (which already has oh-my-zsh, zsh, and shell plugins from the build). Secrets are passed via a local `secrets.tfvars` file (gitignored) and never baked into the image.
+3. **Deploy**: Terraform creates a VM from the custom image. A cloud-init user-data template handles runtime personalization — SSH keys, git config, API keys, and repo cloning. Cloud-init configures the existing `arch` user (which already has oh-my-zsh, zsh, and shell plugins from the build). Secrets are passed via a local `secrets.tfvars` file (gitignored) and never baked into the image.
 
 ## Secrets
 
