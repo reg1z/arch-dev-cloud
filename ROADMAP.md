@@ -6,6 +6,9 @@ nvim
 - [ ] zz center screen binds
 - [ ] Ensure that live updates to files are enabled (IMPORTANT)
 
+tmux
+- [ ] Add omarchy-style tmux configuration
+
 ### misc
 - [ ] set default text editor to nvim
 
@@ -19,6 +22,7 @@ nvim
 - [ ] openspec
   - https://github.com/Fission-AI/OpenSpec/
   - `npm install -g @fission-ai/openspec@latest`
+  - 
 
 
 
